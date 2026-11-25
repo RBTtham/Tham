@@ -1,0 +1,68 @@
+รู้พื้นฐาน sql มาอยู่บ้าง ทำใน phpmyadmin
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    address VARCHAR(255)
+);
+
+CREATE TABLE meters (
+    meter_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    meter_serial VARCHAR(50) UNIQUE NOT NULL,
+    location VARCHAR(100),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+CREATE TABLE readings (
+    reading_id INT PRIMARY KEY,
+    meter_id INT NOT NULL,
+    billing_month VARCHAR(7) NOT NULL,
+    prev_reading INT NOT NULL,
+    curr_reading INT NOT NULL,
+    units_used INT NOT NULL,
+    FOREIGN KEY (meter_id) REFERENCES meters(meter_id)
+);
+
+CREATE TABLE bills (
+    bill_id INT PRIMARY KEY,
+    reading_id INT UNIQUE NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(10) NOT NULL, 
+    due_date DATE NOT NULL,
+    paid_date DATE,
+    FOREIGN KEY (reading_id) REFERENCES readings(reading_id)
+);
+
+1.ใครไม่จ่ายบิลบ้าง
+SELECT 
+    customers.customer_id,
+    customers.full_name,
+    meters.meter_serial,
+    readings.billing_month,
+    bills.amount
+FROM bills
+JOIN readings ON bills.reading_id = readings.reading_id
+JOIN meters ON readings.meter_id = meters.meter_id
+JOIN customers ON meters.customer_id = customers.customer_id
+WHERE bills.status = 'UNPAID';
+
+2.แต่ละเดือนเก็บเงินได้รวมเท่าไร
+SELECT 
+    readings.billing_month,
+    SUM(bills.amount) AS total_collected
+FROM bills
+JOIN readings ON bills.reading_id = readings.reading_id
+WHERE bills.status = 'PAID'
+GROUP BY readings.billing_month
+ORDER BY readings.billing_month;
+
+3. ใครมีมิเตอร์มากกว่า 1 ตัว
+SELECT 
+    customers.customer_id,
+    customers.full_name,
+    COUNT(meters.meter_id) AS metercount
+FROM customers
+JOIN meters ON customers.customer_id = meters.customer_id
+GROUP BY customers.customer_id, customers.full_name
+HAVING COUNT(meters.meter_id) > 1;
