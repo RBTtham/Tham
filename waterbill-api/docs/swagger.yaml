@@ -1,0 +1,308 @@
+basePath: /
+definitions:
+  models.Bill:
+    properties:
+      amount:
+        type: integer
+      due_date:
+        type: string
+      id:
+        type: integer
+      paid_date:
+        type: string
+      reading_id:
+        type: integer
+      status:
+        description: UNPAID หรือ PAID
+        type: string
+    type: object
+  models.CreateCustomerRequest:
+    properties:
+      address:
+        example: 12/3 ต.ในเมือง
+        type: string
+      full_name:
+        example: สมชาย ใจดี
+        type: string
+      phone:
+        example: 081-1111111
+        type: string
+    type: object
+  models.CreateMeterRequest:
+    properties:
+      customer_id:
+        example: 1
+        type: integer
+      location:
+        example: บ้านพักอาศัย
+        type: string
+      meter_serial:
+        example: MTR-2026-001
+        type: string
+    type: object
+  models.CreateReadingRequest:
+    properties:
+      billing_month:
+        example: 2026-11
+        type: string
+      curr_reading:
+        example: 115
+        type: integer
+      meter_id:
+        example: 1
+        type: integer
+    type: object
+  models.Customer:
+    properties:
+      address:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      meters:
+        items:
+          $ref: '#/definitions/models.Meter'
+        type: array
+      phone:
+        type: string
+    type: object
+  models.GenerateBillRequest:
+    properties:
+      reading_id:
+        example: 1
+        type: integer
+    type: object
+  models.Meter:
+    properties:
+      customer_id:
+        type: integer
+      id:
+        type: integer
+      location:
+        type: string
+      meter_serial:
+        type: string
+    type: object
+  models.Reading:
+    properties:
+      billing_month:
+        type: string
+      curr_reading:
+        type: integer
+      id:
+        type: integer
+      meter_id:
+        type: integer
+      prev_reading:
+        type: integer
+      units_used:
+        type: integer
+    type: object
+host: localhost:3001
+info:
+  contact: {}
+  description: API ระบบบริหารจัดการผู้ใช้น้ำ มิเตอร์ และการออกบิล
+  title: Water Bill API
+  version: "1.0"
+paths:
+  /bills/{id}/pay:
+    post:
+      parameters:
+      - description: Bill ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Bill'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: จ่ายบิลค่าน้ำ
+      tags:
+      - bills
+  /bills/generate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: รหัสการจดมิเตอร์
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.GenerateBillRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Bill'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: สร้างบิลค่าน้ำจากเลขที่จด
+      tags:
+      - bills
+  /customers:
+    get:
+      parameters:
+      - description: ค้นหาตามชื่อ
+        in: query
+        name: name
+        type: string
+      - description: หน้าที่ (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: จำนวนต่อหน้า (default 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: ดูรายชื่อผู้ใช้น้ำ (ค้นหาด้วยชื่อและแบ่งหน้าได้)
+      tags:
+      - customers
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ข้อมูลผู้ใช้น้ำ
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Customer'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: เพิ่มผู้ใช้น้ำ
+      tags:
+      - customers
+  /customers/{id}:
+    get:
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Customer'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: ดูข้อมูลผู้ใช้น้ำ 1 คน
+      tags:
+      - customers
+  /meters:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ข้อมูลมิเตอร์
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateMeterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Meter'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: เพิ่มมิเตอร์ให้ผู้ใช้น้ำ
+      tags:
+      - meters
+  /readings:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ข้อมูลเลขมิเตอร์
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateReadingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Reading'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: บันทึกเลขที่จดได้จากมิเตอร์
+      tags:
+      - readings
+swagger: "2.0"
